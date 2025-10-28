@@ -1,1 +1,1 @@
-web: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
+web: gunicorn groupme_cal:app --log-file=- --reload
