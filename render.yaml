@@ -1,0 +1,7 @@
+services:
+- type: web
+  name: groupme-calendar
+  env: python
+  buildCommand: pip install -r requirements.txt
+  startCommand: gunicorn groupme_cal:app
+  autoDeploy: true
