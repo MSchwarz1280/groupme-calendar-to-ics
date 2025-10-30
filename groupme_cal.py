@@ -6,7 +6,7 @@ import utils
 app = Flask(__name__)
 
 with app.app_context():
-    current_app.calendar_timezone = os.environ.get('GROUPME_CALENDAR_TIMEZONE', 'America/Los_Angeles')
+    current_app.calendar_timezone = os.environ.get('GROUPME_CALENDAR_TIMEZONE', 'America/New_York')
     current_app.groupme_calendar_name = os.environ.get('GROUPME_STATIC_NAME', 'GroupMe Calendar')
 
 @app.route('/')

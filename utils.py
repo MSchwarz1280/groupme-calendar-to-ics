@@ -114,5 +114,5 @@ def groupme_ics_error(error_text, static_name=None):
     cal['calscale'] = 'GREGORIAN'
     cal['method'] = 'PUBLISH'
     cal['x-wr-calname'] = f'GroupMe: {current_app.groupme_calendar_name} ({error_text})'
-    cal['x-wr-timezone'] = 'America/Los_Angeles'
+    cal['x-wr-timezone'] = 'America/New_York'
     return cal.to_ical()
