@@ -25,9 +25,8 @@ def index():
             return 'ERROR: The GROUPME_API_KEY is not set.'
 
         combined_json = []
-        for group_id in groupme_group_ids.split(','):
-            group_id = group_id.strip()
-            success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_id=group_id)
+        group_ids = [gid.strip() for gid in groupme_group_ids.split(',') if gid.strip()]
+        success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_ids=group_ids)
             if not success:
                 return f'Error loading calendar for group ID {group_id}.'
             combined_json.extend(current_app.groupme_calendar_json_cache)
@@ -67,9 +66,8 @@ def full_ics():
             return utils.return_ics_Response(utils.groupme_ics_error(error_text='GROUPME_GROUP_IDS not set'))
 
         combined_json = []
-        for group_id in groupme_group_ids.split(','):
-            group_id = group_id.strip()
-            success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_id=group_id)
+        group_ids = [gid.strip() for gid in groupme_group_ids.split(',') if gid.strip()]
+        success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_ids=group_ids)
             if not success:
                 return utils.return_ics_Response(utils.groupme_ics_error(error_text=f'Error loading calendar for group ID {group_id}'))
             combined_json.extend(current_app.groupme_calendar_json_cache)
