@@ -45,13 +45,18 @@ def load_groupme_json(app, groupme_api_key, groupme_group_ids):
             continue
 
         group_events = response.json().get('response', {}).get('events', [])
-        combined_events.extend(group_events)
 
         response_info = requests.get(url_group_info, headers=headers)
+        group_name = None
         if response_info.status_code == 200:
             group_name = response_info.json().get('response', {}).get('name', None)
             if group_name:
                 calendar_names.append(group_name)
+
+        for event in group_events:
+            event['group_id'] = group_id
+            event['group_name'] = group_name
+            combined_events.append(event)
 
     current_app.groupme_calendar_json_cache = {'response': {'events': combined_events}}
     current_app.groupme_calendar_name = ', '.join(calendar_names) if calendar_names else 'GroupMe Calendar'
@@ -75,7 +80,8 @@ def groupme_json_to_ics(groupme_json, static_name=None):
             event.add('dtstart', dateutil.parser.parse(json_blob['start_at']))
             if json_blob.get('end_at'):
                 event.add('dtend', dateutil.parser.parse(json_blob['end_at']))
-            event['summary'] = json_blob['name']
+            group_name = json_blob.get('group_name', 'GroupMe')
+            event['summary'] = f"[{group_name}] {json_blob['name']}"
             event['description'] = json_blob.get('description', '')
 
             if json_blob.get('location'):
