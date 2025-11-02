@@ -13,10 +13,12 @@ with app.app_context():
 def index():
     last_cache = getattr(current_app, 'last_cache', datetime.datetime(year=2000, month=1, day=1))
     cache_duration = int(os.environ.get('CACHE_DURATION', 60))
-    groupme_group_ids = os.environ.get('GROUPME_GROUP_IDS', None)
+    groupme_group_ids_raw = os.environ.get('GROUPME_GROUP_ID', None)
 
-    if not groupme_group_ids:
-        return 'ERROR: The GROUPME_GROUP_IDS is not set.'
+    if not groupme_group_ids_raw:
+        return 'ERROR: The GROUPME_GROUP_ID is not set.'
+
+    groupme_group_ids = [gid.strip() for gid in groupme_group_ids_raw.split(',') if gid.strip()]
 
     if datetime.datetime.now() - last_cache > datetime.timedelta(minutes=cache_duration) or cache_duration == 0:
         print('Cache miss.')
@@ -24,14 +26,11 @@ def index():
         if not groupme_api_key:
             return 'ERROR: The GROUPME_API_KEY is not set.'
 
-        combined_json = []
-        group_ids = [gid.strip() for gid in groupme_group_ids.split(',') if gid.strip()]
-        success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_ids=group_ids)
-            if not success:
-                return f'Error loading calendar for group ID {group_id}.'
-            combined_json.extend(current_app.groupme_calendar_json_cache)
+        success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_ids=groupme_group_ids)
+        if not success:
+            return 'Error loading calendar data.'
 
-        current_app.ics_cache = utils.groupme_json_to_ics(groupme_json=combined_json)
+        current_app.ics_cache = utils.groupme_json_to_ics(groupme_json=current_app.groupme_calendar_json_cache)
         current_app.last_cache = datetime.datetime.now()
     else:
         print('Cache hit. Time remaining: {}'.format(datetime.timedelta(minutes=cache_duration) - (datetime.datetime.now() - last_cache)))
@@ -43,7 +42,7 @@ def index():
     ics_url_http, ics_url_webcal, ics_url_google = utils.build_ics_urls(ics_url)
     params = {
         'title': current_app.groupme_calendar_name,
-        'groupme_id': groupme_group_ids,
+        'groupme_id': groupme_group_ids_raw,
         'ics_url_http': ics_url_http,
         'ics_url_webcal': ics_url_webcal,
         'ics_url_google': ics_url_google,
@@ -55,33 +54,29 @@ def index():
 def full_ics():
     last_cache = getattr(current_app, 'last_cache', datetime.datetime(year=2000, month=1, day=1))
     cache_duration = int(os.environ.get('CACHE_DURATION', 60))
-    groupme_group_ids = os.environ.get('GROUPME_GROUP_IDS', None)
+    groupme_group_ids_raw = os.environ.get('GROUPME_GROUP_ID', None)
+
+    if not groupme_group_ids_raw:
+        return utils.return_ics_Response(utils.groupme_ics_error(error_text='GROUPME_GROUP_ID not set'))
+
+    groupme_group_ids = [gid.strip() for gid in groupme_group_ids_raw.split(',') if gid.strip()]
 
     if datetime.datetime.now() - last_cache > datetime.timedelta(minutes=cache_duration) or cache_duration == 0:
         print('Cache miss.')
         groupme_api_key = os.environ.get('GROUPME_API_KEY', None)
         if not groupme_api_key:
             return utils.return_ics_Response(utils.groupme_ics_error(error_text='GROUPME_API_KEY not set'))
-        if not groupme_group_ids:
-            return utils.return_ics_Response(utils.groupme_ics_error(error_text='GROUPME_GROUP_IDS not set'))
 
-        combined_json = []
-        group_ids = [gid.strip() for gid in groupme_group_ids.split(',') if gid.strip()]
-        success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_ids=group_ids)
-            if not success:
-                return utils.return_ics_Response(utils.groupme_ics_error(error_text=f'Error loading calendar for group ID {group_id}'))
-            combined_json.extend(current_app.groupme_calendar_json_cache)
+        success = utils.load_groupme_json(app=app, groupme_api_key=groupme_api_key, groupme_group_ids=groupme_group_ids)
+        if not success:
+            return utils.return_ics_Response(utils.groupme_ics_error(error_text='Error loading calendar data'))
 
-        current_app.ics_cache = utils.groupme_json_to_ics(groupme_json=combined_json)
+        current_app.ics_cache = utils.groupme_json_to_ics(groupme_json=current_app.groupme_calendar_json_cache)
         current_app.last_cache = datetime.datetime.now()
     else:
         print('Cache hit. Time remaining: {}'.format(datetime.timedelta(minutes=cache_duration) - (datetime.datetime.now() - last_cache)))
 
     return utils.return_ics_Response(getattr(current_app, 'ics_cache', None))
-
-@app.route('/recent.ics')
-def recent_ics():
-    return 'Soon!'
 
 @app.route('/robots.txt')
 def robots():

@@ -83,15 +83,15 @@ def groupme_json_to_ics(groupme_json, static_name=None):
                 if json_blob.get('description'):
                     event['description'] += '\n\nLocation:\n'
 
+                address_clean = location.get('address', '').strip().replace('\n', ', ')
                 if location.get('name') and location.get('address'):
-                    address_clean = location.get('address', '').strip().replace('\n', ', ')
                     event['location'] = f"{location.get('name')}, {address_clean}"
                     event['description'] += location.get('name') + '\n' + location.get('address')
                 elif location.get('name'):
                     event['location'] = location.get('name')
                     event['description'] += location.get('name')
                 elif location.get('address'):
-                    event['location'] = location.get('address').strip().replace('\n', ', ')
+                    event['location'] = address_clean
                     event['description'] += location.get('address')
 
                 if location.get('lat') and location.get('lng'):
@@ -115,5 +115,5 @@ def groupme_ics_error(error_text, static_name=None):
     cal['calscale'] = 'GREGORIAN'
     cal['method'] = 'PUBLISH'
     cal['x-wr-calname'] = f'GroupMe: {current_app.groupme_calendar_name} ({error_text})'
-    cal['x-wr-timezone'] = 'America/New_York'
+    cal['x-wr-timezone'] = current_app.calendar_timezone
     return cal.to_ical()
