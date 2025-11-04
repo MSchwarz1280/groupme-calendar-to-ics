@@ -1,5 +1,5 @@
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
-from icalendar import Calendar, Event
+from icalendar import Calendar, Event, Alarm
 from flask import Response, current_app
 import dateutil.parser
 import requests
@@ -111,6 +111,14 @@ def groupme_json_to_ics(groupme_json, static_name=None):
                 event['last-modified'] = dateutil.parser.parse(json_blob.get('updated_at'))
 
             cal.add_component(event)
+        # Add customizable reminder using environment variable
+        reminder_minutes = int(os.environ.get('GROUPME_EVENT_REMINDER_MINUTES', 30))
+        trigger_str = f"-PT{reminder_minutes}M"
+        alarm = Alarm()
+        alarm.add('action', 'DISPLAY')
+        alarm.add('description', 'Reminder')
+        alarm.add('trigger', trigger_str)
+        event.add_component(alarm)
 
     return cal.to_ical()
 
