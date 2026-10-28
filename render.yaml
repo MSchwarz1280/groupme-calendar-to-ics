@@ -3,5 +3,6 @@ services:
   name: groupme-calendar
   env: python
   buildCommand: pip install -r requirements.txt
-  startCommand: gunicorn groupme_cal:app
+  startCommand: gunicorn groupme_cal:app --workers 1 --threads 4 --timeout 60 --log-file=-
+  healthCheckPath: /healthz
   autoDeploy: true
