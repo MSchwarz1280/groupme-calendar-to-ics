@@ -1,21 +1,37 @@
 # GroupMe Calendar to ICS
 
-Turn your GroupMe event calendar into an ICS feed (for Google Calendar, Apple Calendar, Outlook, etc.).
+Combines the event calendars of several GroupMe groups into one ICS feed you can
+subscribe to from Outlook, Google Calendar or Apple Calendar. Forked from
+amussey/groupme-calendar-to-ics and adapted to handle multiple groups.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy?template=https://github.com/amussey/groupme-calendar-to-ics)
+Feed URL: `https://<your-service>.onrender.com/calendar.ics`
 
-## Deploying
+## Environment variables (set in the Render dashboard)
 
-When you set up this app, you'll be required to configure five environment variables:
+| Variable | Purpose |
+|---|---|
+| `GROUPME_API_KEY` | **Required.** Access token from https://dev.groupme.com (top right). If the feed stops updating and the Render log shows `401 unauthorized`, this token needs replacing. |
+| `GROUPME_GROUP_ID` | **Required.** Comma-separated group IDs. |
+| `GROUPME_CALENDAR_TIMEZONE` | Default `America/New_York`. |
+| `GROUPME_LOOKBACK_DAYS` | Default `14`. Events that ended longer ago than this are left out of the feed, so finished seasons drop off on their own. You can leave old group IDs in place, or remove them whenever convenient. |
+| `GROUPME_EVENT_REMINDER_MINUTES` | Default `30`. `0` turns reminders off. |
+| `CACHE_DURATION` | Minutes to cache GroupMe data. Default `60`. |
+| `GROUPME_STATIC_NAME` | Optional fixed calendar name (otherwise the group names are joined). |
+| `CALENDAR_SECRET` | Optional. If set, the feed and home page need `?key=<secret>`. Subscribe with `.../calendar.ics?key=<secret>`. Without it, anyone with the URL can read your schedules. |
+| `GROUPME_PROXY_URL` | Optional URL to show on the home page instead of the detected one. |
 
- * `GROUPME_GROUP_ID` - The ID for the GroupMe group.  This can be found on the webapp (https://web.groupme.com) under the Settings option for your group.
- * `GROUPME_API_KEY` - A [GroupMe Developer Access Token](https://dev.groupme.com/docs/v3) for a user in the GroupMe group.
- * `CACHE_DURATION` - The duration for which the GroupMe calendar is cached.  `0` will disable caching.
- * `GROUPME_CALENDAR_TIMEZONE` - Timezone of the calendar events.  See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for list. Default is `America/Los_Angeles`
- * `GROUPME_STATIC_NAME` - *(Optional)* A static name for the group.  This will lock a name for the calendar, even if the group decides to change their name.
- * `GROUPME_PROXY_URL` - *(Optional)* A proxy URL to provide for the calendar.ics.
+## Behavior worth knowing
 
+* A group that fails to load keeps its last good events. If everything fails after a good load, the last good calendar is served.
+* If nothing has ever loaded, `/calendar.ics` returns HTTP 503 rather than an empty calendar, so subscribers don't lose events.
+* `/healthz` reports per-group status counts without calling GroupMe. Details are in the Render logs.
+* The cache is in memory. Render's free tier sleeps idle services, so the first request after a sleep re-fetches.
 
-### Default Settings
+## Adding to Outlook (Microsoft 365)
 
- * **Cache Rate** - By default, the GroupMe calendar is refreshed and cached by one request every 60 minutes.  This is designed to help rate limit GroupMe API requests.  The caching rate can be modified or disabled by setting it to `0`.
+Outlook on the web: Add calendar > Subscribe from web > paste the feed URL. Outlook refreshes subscribed calendars on its own schedule (often several hours) and the calendar is read-only. Your IT policy may restrict internet calendar subscriptions.
+
+## Local development and tests
+
+    pip install -r requirements.txt pytest
+    python -m pytest test_feed.py
